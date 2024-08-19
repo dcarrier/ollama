@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -169,14 +168,10 @@ func (c *Client) stream(ctx context.Context, method, path string, data any, fn f
 
 		bts := scanner.Bytes()
 		if err := json.Unmarshal(bts, &errorResponse); err != nil {
-			return fmt.Errorf("unmarshal: %w", err)
+			errorResponse.Error = err.Error()
 		}
 
-		if errorResponse.Error != "" {
-			return errors.New(errorResponse.Error)
-		}
-
-		if response.StatusCode >= http.StatusBadRequest {
+		if (response.StatusCode >= http.StatusBadRequest) || errorResponse.Error != "" {
 			return StatusError{
 				StatusCode:   response.StatusCode,
 				Status:       response.Status,
